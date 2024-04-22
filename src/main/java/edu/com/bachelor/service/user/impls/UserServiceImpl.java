@@ -21,10 +21,14 @@ public class UserServiceImpl implements IUserService {
     private UserRepository repository;
 
     @Override
-    public User save(User user) { //check login and email
+    public User save(User user) {
         if(user.getId() != null){
             return null;
         }
+        if(isLoginPresent(user.getLogin())){
+            return null;
+        }
+        //CHECK EMAIL
         user.setCreatedAt(LocalDateTime.now());
         return repository.save(user);
     }
@@ -61,7 +65,9 @@ public class UserServiceImpl implements IUserService {
         return repository.save(existingUser);
     }
 
-
+    private boolean isLoginPresent(String login){
+        return this.getUserByLogin(login).isPresent();
+    }
 
     public Optional<User> getUserByLogin(String login) throws UsernameNotFoundException {
         return repository.findByLogin(login);

@@ -1,5 +1,7 @@
 package edu.com.bachelor.jwt;
 
+import edu.com.bachelor.token.Token;
+import edu.com.bachelor.token.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +23,7 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final TokenService tokenService;
 
     @Override
     protected void doFilterInternal(
@@ -38,7 +41,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String username = jwtService.extractLogin(jwt);
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtService.isJwtValid(jwt, userDetails)) {
+            if (jwtService.isJwtValid(jwt, userDetails) && !isTokenRevoked(jwt)) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -52,6 +55,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-
+    private boolean isTokenRevoked(String jwt) {
+        return tokenService.getByJwt(jwt)
+                .map(Token::isRevoked)
+                .orElse(true);
+    }
 
 }
